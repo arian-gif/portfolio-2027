@@ -1085,32 +1085,8 @@ export default function App() {
     // setting automatically (transform animations skipped, opacity kept).
     <MotionConfig reducedMotion="user">
     <div className="min-h-screen overflow-x-hidden" style={{ background: "#020817", color: "#e2e8f0", fontFamily: "Inter, sans-serif" }}>
+      {/* Stars + nebula clouds are all painted by the StarField canvas. */}
       <StarField />
-
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div
-          style={{
-            position: "absolute",
-            width: "55vw",
-            height: "55vh",
-            top: "15%",
-            right: "-15%",
-            background: "radial-gradient(ellipse, rgba(139,92,246,0.045) 0%, transparent 70%)",
-            filter: "blur(50px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: "45vw",
-            height: "45vh",
-            bottom: "8%",
-            left: "-8%",
-            background: "radial-gradient(ellipse, rgba(34,211,238,0.035) 0%, transparent 70%)",
-            filter: "blur(50px)",
-          }}
-        />
-      </div>
 
       <Nav active={active} />
 
