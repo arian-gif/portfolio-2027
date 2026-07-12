@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, Suspense, lazy, type CSSProperties } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import {
   ChevronDown,
   Rocket,
@@ -25,92 +25,10 @@ import {
   type Project,
 } from "./content";
 import ArianAI from "./components/ArianAI";
+import StarField from "./effects/StarField";
 
 // 3D Saturn is loaded lazily so the page paints instantly while three.js loads.
 const Saturn3D = lazy(() => import("./components/Saturn3D"));
-
-// ─── StarField ────────────────────────────────────────────────────────────────
-
-function StarField() {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    const ctx = c.getContext("2d")!;
-
-    const resize = () => {
-      c.width = innerWidth;
-      c.height = innerHeight;
-    };
-    resize();
-    addEventListener("resize", resize);
-
-    const stars = Array.from({ length: 320 }, () => ({
-      x: Math.random() * innerWidth,
-      y: Math.random() * innerHeight,
-      r: Math.random() * 1.3 + 0.2,
-      twinkle: Math.random() * Math.PI * 2,
-      speed: Math.random() * 0.4 + 0.15,
-    }));
-
-    type Shooter = { x: number; y: number; life: number };
-    const shooters: Shooter[] = [];
-    let t = 0;
-    let raf: number;
-
-    const draw = () => {
-      ctx.clearRect(0, 0, c.width, c.height);
-      t += 0.007;
-
-      for (const s of stars) {
-        const a = 0.25 + 0.7 * (0.5 + 0.5 * Math.sin(t * s.speed + s.twinkle));
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(210,225,255,${a})`;
-        ctx.fill();
-      }
-
-      if (Math.random() < 0.003) {
-        shooters.push({
-          x: Math.random() * c.width * 0.75 + c.width * 0.1,
-          y: Math.random() * c.height * 0.45,
-          life: 1,
-        });
-      }
-
-      for (let i = shooters.length - 1; i >= 0; i--) {
-        const s = shooters[i];
-        const g = ctx.createLinearGradient(s.x, s.y, s.x - 80, s.y - 40);
-        g.addColorStop(0, `rgba(255,255,255,${s.life})`);
-        g.addColorStop(0.4, `rgba(200,230,255,${s.life * 0.5})`);
-        g.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(s.x - 80, s.y - 40);
-        ctx.strokeStyle = g;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        s.x += 7;
-        s.y += 3.5;
-        s.life -= 0.022;
-        if (s.life <= 0) shooters.splice(i, 1);
-      }
-
-      raf = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => {
-      cancelAnimationFrame(raf);
-      removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas ref={ref} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />
-  );
-}
 
 // ─── Hero Saturn (3D GLB) ─────────────────────────────────────────────────────
 
@@ -829,8 +747,9 @@ function TimelinePlanet({ color, glow, variant, open }: { color: string; glow: s
           boxShadow: `0 0 ${open ? 16 : 9}px ${glow}${open ? "aa" : "66"}`,
         }}
       >
-        {/* Spinning surface */}
+        {/* Spinning surface (tl-surface lets CSS stop it under reduced motion) */}
         <span
+          className="tl-surface"
           style={{
             position: "absolute",
             top: 0,
@@ -1162,6 +1081,9 @@ export default function App() {
   }, []);
 
   return (
+    // reducedMotion="user" makes motion respect the OS prefers-reduced-motion
+    // setting automatically (transform animations skipped, opacity kept).
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen overflow-x-hidden" style={{ background: "#020817", color: "#e2e8f0", fontFamily: "Inter, sans-serif" }}>
       <StarField />
 
@@ -1205,5 +1127,6 @@ export default function App() {
       {/* The rocket-ship Arian AI chatbot, fixed at the bottom */}
       <ArianAI />
     </div>
+    </MotionConfig>
   );
 }

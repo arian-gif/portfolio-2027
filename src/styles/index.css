@@ -21,3 +21,9 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* Respect the OS reduced-motion setting for pure-CSS animations.
+   (Framer-driven animations are handled by <MotionConfig reducedMotion="user">.) */
+@media (prefers-reduced-motion: reduce) {
+  .tl-surface { animation: none !important; }
+}
