@@ -20,6 +20,14 @@ const NARROW_MQ = "(max-width: 767px)";
 
 function computePrefs(): MotionPrefs {
   if (typeof window === "undefined") return { reducedMotion: false, tier: "full" };
+
+  // Debug escape hatch: ?motion=full | lite | reduced forces a mode
+  // (handy for testing tiers on devices that can't switch naturally).
+  const forced = new URLSearchParams(location.search).get("motion");
+  if (forced === "full") return { reducedMotion: false, tier: "full" };
+  if (forced === "lite") return { reducedMotion: false, tier: "lite" };
+  if (forced === "reduced") return { reducedMotion: true, tier: "lite" };
+
   const reducedMotion = matchMedia(REDUCED_MQ).matches;
   // navigator.deviceMemory is Chrome-only; treat "unknown" as plenty (8 GB).
   const memory = (navigator as { deviceMemory?: number }).deviceMemory ?? 8;

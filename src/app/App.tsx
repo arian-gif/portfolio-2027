@@ -26,6 +26,7 @@ import {
 } from "./content";
 import ArianAI from "./components/ArianAI";
 import StarField from "./effects/StarField";
+import TiltCard from "./effects/TiltCard";
 
 // 3D Saturn is loaded lazily so the page paints instantly while three.js loads.
 const Saturn3D = lazy(() => import("./components/Saturn3D"));
@@ -388,15 +389,21 @@ function ProjectsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ delay: i * 0.08, duration: 0.6 }}
+                className="h-full"
+              >
+              {/* TiltCard owns the hover transform (3D tilt + lift + glare). */}
+              <TiltCard
+                className="h-full"
+                onClick={() => setOpenIdx(i)}
                 onHoverStart={() => setHovered(i)}
                 onHoverEnd={() => setHovered(null)}
-                onClick={() => setOpenIdx(i)}
+              >
+              <div
                 className="relative overflow-hidden rounded-2xl cursor-pointer h-full flex flex-col"
                 style={{
                   background: `linear-gradient(140deg, ${m.from} 0%, ${m.via} 100%)`,
                   border: "1px solid rgba(255,255,255,0.07)",
-                  transform: hovered === i ? "scale(1.025) translateY(-5px)" : "scale(1) translateY(0)",
-                  transition: "transform 0.32s ease, box-shadow 0.32s ease",
+                  transition: "box-shadow 0.32s ease",
                   boxShadow: hovered === i ? `0 24px 64px ${m.accent}28` : "0 4px 24px rgba(0,0,0,0.4)",
                 }}
               >
@@ -494,6 +501,8 @@ function ProjectsSection() {
                     )}
                   </div>
                 </div>
+              </div>
+              </TiltCard>
               </motion.div>
             );
           })}
@@ -731,6 +740,13 @@ function TimelinePlanet({ color, glow, variant, open }: { color: string; glow: s
 
   return (
     <span style={{ position: "relative", width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {/* Orbit ring: dashed circle + glowing dot, brighter/faster when open */}
+      <span
+        className={`tl-orbit${open ? " tl-orbit--open" : ""}`}
+        style={{ borderColor: `${color}44` }}
+      >
+        <span className="tl-orbit-dot" style={{ background: color, boxShadow: `0 0 6px ${glow}` }} />
+      </span>
       {v.ring && <span style={ring(color, v.ringTilt, 62, v.thin ? 14 : 18)} />}
       {v.ring && v.double && <span style={ring(color, v.ringTilt, 50, v.thin ? 10 : 13)} />}
 
@@ -824,7 +840,7 @@ function ExperienceSection() {
                     onClick={toggle}
                     aria-expanded={isOpen}
                     aria-label={`${job.role} at ${job.company}`}
-                    className="flex-shrink-0 flex items-start"
+                    className="tl-node flex-shrink-0 flex items-start"
                     style={{ width: 64, cursor: "pointer" }}
                   >
                     <motion.span
