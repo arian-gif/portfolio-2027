@@ -1,0 +1,23 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Timeline planet surface rotation. The surface layer is 200% wide with a
+   tile that repeats every 50%, so translating by -50% loops seamlessly. */
+@keyframes tl-spin {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Project "mission briefing" modal panel entrance. Kept in CSS (not framer)
+   so the panel can be a plain <div> — nested motion components inside an
+   AnimatePresence child prevent the overlay from unmounting on exit. */
+@keyframes proj-pop {
+  from { opacity: 0; transform: scale(0.94) translateY(24px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes proj-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

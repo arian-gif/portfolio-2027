@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[functions]
+  # Bundle TypeScript functions with esbuild.
+  node_bundler = "esbuild"
+
+# SPA fallback: serve index.html for any non-file, non-function route.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
