@@ -203,7 +203,7 @@ export default function ArianAI() {
                   <div
                     className="max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Space Grotesk, sans-serif",
                       background:
                         m.role === "user"
                           ? "linear-gradient(135deg, #22d3ee, #0ea5e9)"
@@ -275,7 +275,7 @@ export default function ArianAI() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={`Ask about ${PROFILE.name}…`}
                 className="flex-1 bg-transparent text-sm text-white outline-none px-2"
-                style={{ fontFamily: "Inter, sans-serif" }}
+                style={{ fontFamily: "Space Grotesk, sans-serif" }}
               />
               <button
                 type="submit"

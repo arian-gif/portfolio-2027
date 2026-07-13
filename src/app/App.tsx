@@ -284,7 +284,7 @@ function HeroSection() {
           <motion.p
             {...fadeUp(INTRO.intro, reducedMotion)}
             className="mb-9 max-w-md leading-relaxed"
-            style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", fontSize: "1.05rem" }}
+            style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif", fontSize: "1.05rem" }}
           >
             {PROFILE.intro}
           </motion.p>
@@ -401,7 +401,7 @@ function AboutSection() {
               whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ delay: i * 0.1, duration: 0.6 }}
-              style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", fontSize: "1.1rem", lineHeight: 1.75 }}
+              style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif", fontSize: "1.1rem", lineHeight: 1.75 }}
             >
               {para}
             </motion.p>
@@ -512,7 +512,7 @@ function ProjectsSection() {
                     </span>
                   </div>
 
-                  <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}>
+                  <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Space Grotesk, sans-serif" }}>
                     {m.desc}
                   </p>
 
@@ -665,7 +665,7 @@ function ProjectModal({ project, onClose }: { project: Project | null; onClose: 
                 </div>
               )}
 
-              <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Space Grotesk, sans-serif" }}>
                 {project.details ?? project.desc}
               </p>
 
@@ -953,7 +953,7 @@ function ExperienceSection() {
                       <h3 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.55rem", fontWeight: 700, color: "white", letterSpacing: "0.01em", lineHeight: 1.1 }}>
                         {job.role}
                       </h3>
-                      <div className="text-sm" style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif" }}>
+                      <div className="text-sm" style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif" }}>
                         {job.company}
                       </div>
                     </button>
@@ -971,12 +971,12 @@ function ExperienceSection() {
                             className="mt-4 p-5 rounded-2xl"
                             style={{ background: "rgba(15,23,42,0.7)", border: `1px solid ${c.glow}33`, backdropFilter: "blur(12px)" }}
                           >
-                            <p className="text-sm mb-4 leading-relaxed" style={{ color: "#cbd5e1", fontFamily: "Inter, sans-serif" }}>
+                            <p className="text-sm mb-4 leading-relaxed" style={{ color: "#cbd5e1", fontFamily: "Space Grotesk, sans-serif" }}>
                               {job.summary}
                             </p>
                             <ul className="space-y-2">
                               {job.highlights.map((h, j) => (
-                                <li key={j} className="flex gap-2.5 text-sm" style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif" }}>
+                                <li key={j} className="flex gap-2.5 text-sm" style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif" }}>
                                   <span style={{ color: c.color, marginTop: 1 }}>▹</span>
                                   <span>{h}</span>
                                 </li>
@@ -1057,7 +1057,7 @@ function ContactSection() {
               <div className="text-sm font-semibold mb-1.5 relative" style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Rajdhani, sans-serif", letterSpacing: "0.08em" }}>
                 {s.unit}
               </div>
-              <div className="text-xs relative" style={{ color: "#475569", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>
+              <div className="text-xs relative" style={{ color: "#475569", fontFamily: "Space Grotesk, sans-serif", lineHeight: 1.4 }}>
                 {s.label}
               </div>
             </motion.div>
@@ -1084,7 +1084,7 @@ function ContactSection() {
           >
             GET IN TOUCH
           </h3>
-          <p className="mb-8 mx-auto max-w-md relative" style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", lineHeight: 1.65 }}>
+          <p className="mb-8 mx-auto max-w-md relative" style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif", lineHeight: 1.65 }}>
             {PROFILE.status === "AVAILABLE FOR HIRE"
               ? `I'm currently open to new opportunities. Reach out, or ask my AI assistant (the rocket below) anything about me first.`
               : `Want to collaborate or just say hi? Reach out, or ask my AI assistant (the rocket below) anything about me first.`}
@@ -1179,7 +1179,7 @@ export default function App() {
     // reducedMotion="user" makes motion respect the OS prefers-reduced-motion
     // setting automatically (transform animations skipped, opacity kept).
     <MotionConfig reducedMotion="user">
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "#020817", color: "#e2e8f0", fontFamily: "Inter, sans-serif" }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "#020817", color: "#e2e8f0", fontFamily: "Space Grotesk, sans-serif" }}>
       {/* Stars + nebula clouds are all painted by the StarField canvas. */}
       <StarField />
 
