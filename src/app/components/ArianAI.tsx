@@ -24,6 +24,38 @@ const GREETING: Msg = {
     `projects, experience, or how to get in touch. (I only answer questions about ${PROFILE.name}.)`,
 };
 
+// The model replies with light markdown (**bold**, *italic*, `code`) for
+// emphasis — e.g. italicizing movie titles. This renders just that subset
+// inline; it's a chat bubble, not a document, so no headings/lists/links.
+function renderInlineMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={i}
+          style={{
+            background: "rgba(255,255,255,0.1)",
+            padding: "1px 5px",
+            borderRadius: 4,
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "0.85em",
+          }}
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
+
 export default function ArianAI() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
@@ -215,7 +247,7 @@ export default function ArianAI() {
                       whiteSpace: "pre-wrap",
                     }}
                   >
-                    {m.content}
+                    {renderInlineMarkdown(m.content)}
                   </div>
                 </div>
               ))}
