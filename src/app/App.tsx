@@ -38,6 +38,7 @@ import ArianAI from "./components/ArianAI";
 import StarField from "./effects/StarField";
 import TiltCard from "./effects/TiltCard";
 import { useMotionPrefs } from "./effects/useMotionPrefs";
+import { INTRO, fadeUp, titleWipe, ctaPop, saturnEntrance } from "./effects/heroIntro";
 
 // 3D Saturn is loaded lazily so the page paints instantly while three.js loads.
 const Saturn3D = lazy(() => import("./components/Saturn3D"));
@@ -240,18 +241,16 @@ function HeroSection() {
   return (
     <section ref={heroRef} id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
       <div className="w-full max-w-7xl mx-auto px-6 md:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center py-16">
-        <motion.div
-          initial={{ opacity: 0, x: -32 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.85, delay: 0.15 }}
-        >
-          <div className="flex items-center gap-2 mb-5">
+        {/* Left column: staggered entrance sequence (see effects/heroIntro.ts) */}
+        <div>
+          <motion.div {...fadeUp(INTRO.status, reducedMotion)} className="flex items-center gap-2 mb-5">
             <span className="text-xs tracking-widest" style={{ color: "#22d3ee", fontFamily: "JetBrains Mono, monospace" }}>
               {PROFILE.status} / {PROFILE.location}
             </span>
-          </div>
+          </motion.div>
 
-          <h1
+          <motion.h1
+            {...titleWipe(reducedMotion)}
             className="mb-3 leading-none"
             style={{
               fontFamily: "Rajdhani, sans-serif",
@@ -263,9 +262,10 @@ function HeroSection() {
             }}
           >
             {PROFILE.name.toUpperCase()}
-          </h1>
+          </motion.h1>
 
-          <h2
+          <motion.h2
+            {...fadeUp(INTRO.tagline, reducedMotion)}
             className="mb-6"
             style={{
               fontFamily: "Rajdhani, sans-serif",
@@ -279,16 +279,17 @@ function HeroSection() {
             }}
           >
             {PROFILE.tagline}
-          </h2>
+          </motion.h2>
 
-          <p
+          <motion.p
+            {...fadeUp(INTRO.intro, reducedMotion)}
             className="mb-9 max-w-md leading-relaxed"
             style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", fontSize: "1.05rem" }}
           >
             {PROFILE.intro}
-          </p>
+          </motion.p>
 
-          <div className="flex items-center gap-4 flex-wrap">
+          <motion.div {...ctaPop(INTRO.ctas, reducedMotion)} className="flex items-center gap-4 flex-wrap">
             <button
               onClick={() => document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" })}
               className="px-7 py-3.5 rounded-full text-sm font-semibold tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
@@ -314,12 +315,18 @@ function HeroSection() {
             >
               GET IN TOUCH →
             </button>
-          </div>
+          </motion.div>
 
+          {/* Chevron: fades in last, then bobs forever (bob skipped under
+              reduced motion via MotionConfig). */}
           <motion.div
             className="mt-14 flex items-center gap-2"
-            animate={{ y: [0, 7, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: [0, 7, 0] }}
+            transition={{
+              opacity: { delay: INTRO.chevron, duration: 0.5 },
+              y: { delay: INTRO.chevron, duration: 2.2, repeat: Infinity, ease: "easeInOut" },
+            }}
             style={{ color: "#334155" }}
           >
             <ChevronDown size={15} />
@@ -327,14 +334,11 @@ function HeroSection() {
               SCROLL TO EXPLORE
             </span>
           </motion.div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="flex justify-center"
-          initial={{ opacity: 0, scale: 0.78 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        >
+        {/* Saturn scales up from the void — the wrapper animates immediately,
+            even while the GLB is still streaming in. */}
+        <motion.div className="flex justify-center" {...saturnEntrance(reducedMotion)}>
           <HeroSaturn mx={mx} my={my} satY={satY} satScale={satScale} satOpacity={satOpacity} scrollRef={scrollRef} />
         </motion.div>
       </div>
@@ -1117,6 +1121,10 @@ function ContactSection() {
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 function Footer() {
+  // The ONLINE pulse is an opacity loop — MotionConfig only gates transform
+  // animations, so reduced motion is handled explicitly here.
+  const { reducedMotion } = useMotionPrefs();
+
   return (
     <footer className="py-10 pb-24 relative" style={{ zIndex: 1, borderTop: "1px solid rgba(148,163,184,0.05)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -1138,7 +1146,7 @@ function Footer() {
           <motion.div
             className="w-2 h-2 rounded-full"
             style={{ background: "#22d3ee", boxShadow: "0 0 7px rgba(34,211,238,0.9)" }}
-            animate={{ opacity: [1, 0.4, 1] }}
+            animate={reducedMotion ? undefined : { opacity: [1, 0.4, 1] }}
             transition={{ duration: 1.6, repeat: Infinity }}
           />
           <span className="text-xs" style={{ color: "#22d3ee", fontFamily: "JetBrains Mono, monospace" }}>
