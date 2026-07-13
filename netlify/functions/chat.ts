@@ -16,16 +16,21 @@
 const ARIAN_PROFILE = `
 ABOUT ARIAN:
 - Name: Arian
-- Role: Full-Stack Developer & AI Builder   <!-- TODO: your real title -->
-- Location: Remote / Earth                   <!-- TODO -->
-- Summary: Arian designs and builds modern software: polished web apps and
-  applied-AI systems. Currently open to new job opportunities.   <!-- TODO -->
+- Role: Mechatronics Engineer | ML & Robotics
+- Location: Remote / Earth
+- Summary: Arian is a mechatronics engineering student who builds across AI/ML and
+  robotics: multi-agent LLM systems, applied ML for industrial automation, robot
+  learning (VLA models, sim-to-real pipelines), and full-stack apps to ship it all.
+  Currently available for hire / open to new opportunities.
 
 SKILLS:
-- Frontend: React, TypeScript, Tailwind CSS
-- Backend: Node.js, Python, REST/serverless APIs
-- AI: Large language models, DeepSeek/OpenAI APIs, building chatbots & agents
-<!-- TODO: refine with your real proficiencies -->
+- AI / ML: LangGraph, LangChain, CrewAI (multi-agent systems), RAG, LLM fine-tuning,
+  PyTorch, NumPy, Scikit-learn, contrastive decoding research (hallucination mitigation)
+- Robotics: ROS, MuJoCo, NVIDIA Isaac Sim, Vision-Language-Action (VLA) models, RobotC,
+  CAD, sensor integration (encoder, touch, color, gyro)
+- Backend / Cloud: FastAPI, Node.js, MongoDB, Redis, Azure KQL pipelines, AWS, JWT/SSO
+  auth, Langfuse (LLM telemetry)
+- Frontend / Mobile: React, TypeScript, Tailwind CSS, Flutter, Dart
 
 PROJECTS:
 - Stealth Startup (2026, in progress): Arian is co-building an early-stage startup at the
@@ -96,8 +101,18 @@ EXPERIENCE:
   computer issues with high customer satisfaction.
 
 AVAILABILITY & CONTACT:
-- Status: Available for hire / open to opportunities. <!-- TODO -->
-- Best way to reach Arian: via the Contact section of this site (email/LinkedIn).
+- Status: Available for hire / open to new opportunities.
+- Email: as8khan@uwaterloo.ca
+- LinkedIn: linkedin.com/in/ariansadatkhan
+- GitHub: github.com/arian-gif
+- Résumé: linked from the Contact section of this site.
+- If someone wants to hire or reach Arian, give the email directly and mention the
+  Contact section / "HIRE ME" button on the site also links straight to that email.
+
+BY THE NUMBERS:
+- 6+ roles across AI, ML, and robotics teams; 5+ AI/ML systems engineered end-to-end;
+  10+ projects designed, built, and shipped; ongoing research on reducing multimodal
+  LLM hallucinations (contrastive decoding).
 `;
 
 // ─── 2. The guardrail (the rules the model must follow) ───────────────────────

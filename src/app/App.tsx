@@ -152,8 +152,8 @@ function Nav({ active }: { active: string }) {
           ))}
         </div>
 
-        <button
-          onClick={() => scroll("contact")}
+        <a
+          href={`mailto:${PROFILE.email}`}
           className="hidden md:block px-5 py-2 rounded-full text-xs font-semibold tracking-wider transition-all duration-200 hover:scale-105"
           style={{
             background: "linear-gradient(135deg, #22d3ee, #8b5cf6)",
@@ -163,7 +163,7 @@ function Nav({ active }: { active: string }) {
           }}
         >
           HIRE ME →
-        </button>
+        </a>
 
         <button
           className="md:hidden text-slate-400 hover:text-white transition-colors"
