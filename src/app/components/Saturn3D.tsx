@@ -79,9 +79,11 @@ export default function Saturn3D({ scrollRef }: SaturnProps) {
 
   return (
     <Canvas
-      dpr={[1, 2]}
+      // Lite tier (mobile/low-memory): lower pixel ratio, no antialiasing —
+      // the planet is small on those screens anyway.
+      dpr={tier === "lite" ? [1, 1.5] : [1, 2]}
       camera={{ position: [0, 0.4, 6], fov: 40 }}
-      gl={{ antialias: true, alpha: true }}
+      gl={{ antialias: tier !== "lite", alpha: true, powerPreference: "high-performance" }}
       // touchAction pan-y keeps one-finger scroll working over the canvas.
       style={{ width: "100%", height: "100%", background: "transparent", touchAction: "pan-y" }}
     >
