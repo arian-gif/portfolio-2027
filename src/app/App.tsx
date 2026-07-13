@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, Suspense, lazy, type CSSProperties } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  MotionConfig,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValue,
+  useMotionValueEvent,
+  type MotionValue,
+} from "motion/react";
 import {
   ChevronDown,
   Rocket,
@@ -25,130 +35,67 @@ import {
   type Project,
 } from "./content";
 import ArianAI from "./components/ArianAI";
+import StarField from "./effects/StarField";
+import TiltCard from "./effects/TiltCard";
+import { useMotionPrefs } from "./effects/useMotionPrefs";
+import { INTRO, fadeUp, titleWipe, ctaPop, saturnEntrance } from "./effects/heroIntro";
 
 // 3D Saturn is loaded lazily so the page paints instantly while three.js loads.
 const Saturn3D = lazy(() => import("./components/Saturn3D"));
 
-// ─── StarField ────────────────────────────────────────────────────────────────
-
-function StarField() {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    const ctx = c.getContext("2d")!;
-
-    const resize = () => {
-      c.width = innerWidth;
-      c.height = innerHeight;
-    };
-    resize();
-    addEventListener("resize", resize);
-
-    const stars = Array.from({ length: 320 }, () => ({
-      x: Math.random() * innerWidth,
-      y: Math.random() * innerHeight,
-      r: Math.random() * 1.3 + 0.2,
-      twinkle: Math.random() * Math.PI * 2,
-      speed: Math.random() * 0.4 + 0.15,
-    }));
-
-    type Shooter = { x: number; y: number; life: number };
-    const shooters: Shooter[] = [];
-    let t = 0;
-    let raf: number;
-
-    const draw = () => {
-      ctx.clearRect(0, 0, c.width, c.height);
-      t += 0.007;
-
-      for (const s of stars) {
-        const a = 0.25 + 0.7 * (0.5 + 0.5 * Math.sin(t * s.speed + s.twinkle));
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(210,225,255,${a})`;
-        ctx.fill();
-      }
-
-      if (Math.random() < 0.003) {
-        shooters.push({
-          x: Math.random() * c.width * 0.75 + c.width * 0.1,
-          y: Math.random() * c.height * 0.45,
-          life: 1,
-        });
-      }
-
-      for (let i = shooters.length - 1; i >= 0; i--) {
-        const s = shooters[i];
-        const g = ctx.createLinearGradient(s.x, s.y, s.x - 80, s.y - 40);
-        g.addColorStop(0, `rgba(255,255,255,${s.life})`);
-        g.addColorStop(0.4, `rgba(200,230,255,${s.life * 0.5})`);
-        g.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(s.x - 80, s.y - 40);
-        ctx.strokeStyle = g;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        s.x += 7;
-        s.y += 3.5;
-        s.life -= 0.022;
-        if (s.life <= 0) shooters.splice(i, 1);
-      }
-
-      raf = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => {
-      cancelAnimationFrame(raf);
-      removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas ref={ref} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />
-  );
-}
-
 // ─── Hero Saturn (3D GLB) ─────────────────────────────────────────────────────
 
-function HeroSaturn({ mx, my }: { mx: number; my: number }) {
+type HeroSaturnProps = {
+  // Spring-smoothed mouse position (-0.5..0.5) — MotionValues, no re-renders.
+  mx: MotionValue<number>;
+  my: MotionValue<number>;
+  // Scroll-driven transforms from the hero's scroll progress.
+  satY: MotionValue<number>;
+  satScale: MotionValue<number>;
+  satOpacity: MotionValue<number>;
+  // Raw 0..1 hero scroll progress for the GL scene (read inside useFrame).
+  scrollRef: React.MutableRefObject<number>;
+};
+
+function HeroSaturn({ mx, my, satY, satScale, satOpacity, scrollRef }: HeroSaturnProps) {
   const SIZE = 380;
+  // Nested motion.divs keep the two transform sources independent:
+  // outer = scroll (recede/shrink/fade), inner = mouse drift.
+  const driftX = useTransform(mx, (v) => v * 14);
+  const driftY = useTransform(my, (v) => v * 10);
 
   return (
-    <motion.div
-      style={{ width: SIZE, height: SIZE, maxWidth: "90vw", position: "relative", flexShrink: 0 }}
-      animate={{ x: mx * 14, y: my * 10 }}
-      transition={{ type: "spring", stiffness: 35, damping: 22 }}
-    >
-      {/* Nebula glow behind the planet */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "-30%",
-          background:
-            "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
-          filter: "blur(28px)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: "8%",
-          borderRadius: "50%",
-          boxShadow:
-            "0 0 70px rgba(34,211,238,0.18), 0 0 140px rgba(139,92,246,0.12)",
-          pointerEvents: "none",
-        }}
-      />
+    <motion.div style={{ y: satY, scale: satScale, opacity: satOpacity, flexShrink: 0 }}>
+      <motion.div
+        style={{ width: SIZE, height: SIZE, maxWidth: "90vw", position: "relative", x: driftX, y: driftY }}
+      >
+        {/* Nebula glow behind the planet */}
+        <div
+          style={{
+            position: "absolute",
+            inset: "-30%",
+            background:
+              "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
+            filter: "blur(28px)",
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: "8%",
+            borderRadius: "50%",
+            boxShadow:
+              "0 0 70px rgba(34,211,238,0.18), 0 0 140px rgba(139,92,246,0.12)",
+            pointerEvents: "none",
+          }}
+        />
 
-      {/* The actual 3D model */}
-      <Suspense fallback={null}>
-        <Saturn3D />
-      </Suspense>
+        {/* The actual 3D model */}
+        <Suspense fallback={null}>
+          <Saturn3D scrollRef={scrollRef} />
+        </Suspense>
+      </motion.div>
     </motion.div>
   );
 }
@@ -205,8 +152,8 @@ function Nav({ active }: { active: string }) {
           ))}
         </div>
 
-        <button
-          onClick={() => scroll("contact")}
+        <a
+          href={`mailto:${PROFILE.email}`}
           className="hidden md:block px-5 py-2 rounded-full text-xs font-semibold tracking-wider transition-all duration-200 hover:scale-105"
           style={{
             background: "linear-gradient(135deg, #22d3ee, #8b5cf6)",
@@ -216,7 +163,7 @@ function Nav({ active }: { active: string }) {
           }}
         >
           HIRE ME →
-        </button>
+        </a>
 
         <button
           className="md:hidden text-slate-400 hover:text-white transition-colors"
@@ -258,31 +205,52 @@ function Nav({ active }: { active: string }) {
 // ─── Hero Section ─────────────────────────────────────────────────────────────
 
 function HeroSection() {
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const heroRef = useRef<HTMLElement>(null);
+
+  // Scroll progress through the hero (0 = top of page, 1 = hero scrolled out).
+  // Drives Saturn's "leaving orbit" exit: sink, shrink, fade + faster spin.
+  // Scroll-linked bindings bypass MotionConfig, so reduced motion flattens
+  // the ranges here explicitly.
+  const { reducedMotion } = useMotionPrefs();
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const satY = useTransform(scrollYProgress, [0, 1], reducedMotion ? [0, 0] : [0, 140]);
+  const satScale = useTransform(scrollYProgress, [0, 1], reducedMotion ? [1, 1] : [1, 0.55]);
+  const satOpacity = useTransform(scrollYProgress, [0, 0.85], reducedMotion ? [1, 1] : [1, 0]);
+
+  // The GL scene can't consume MotionValues — mirror progress into a ref.
+  const scrollRef = useRef(0);
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    scrollRef.current = v;
+  });
+
+  // Mouse drift as spring-smoothed MotionValues (no re-render per mousemove).
+  const mxRaw = useMotionValue(0);
+  const myRaw = useMotionValue(0);
+  const mx = useSpring(mxRaw, { stiffness: 35, damping: 22 });
+  const my = useSpring(myRaw, { stiffness: 35, damping: 22 });
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      setMouse({ x: e.clientX / innerWidth - 0.5, y: e.clientY / innerHeight - 0.5 });
+      mxRaw.set(e.clientX / innerWidth - 0.5);
+      myRaw.set(e.clientY / innerHeight - 0.5);
     };
     addEventListener("mousemove", h);
     return () => removeEventListener("mousemove", h);
-  }, []);
+  }, [mxRaw, myRaw]);
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
+    <section ref={heroRef} id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
       <div className="w-full max-w-7xl mx-auto px-6 md:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center py-16">
-        <motion.div
-          initial={{ opacity: 0, x: -32 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.85, delay: 0.15 }}
-        >
-          <div className="flex items-center gap-2 mb-5">
+        {/* Left column: staggered entrance sequence (see effects/heroIntro.ts) */}
+        <div>
+          <motion.div {...fadeUp(INTRO.status, reducedMotion)} className="flex items-center gap-2 mb-5">
             <span className="text-xs tracking-widest" style={{ color: "#22d3ee", fontFamily: "JetBrains Mono, monospace" }}>
               {PROFILE.status} / {PROFILE.location}
             </span>
-          </div>
+          </motion.div>
 
-          <h1
+          <motion.h1
+            {...titleWipe(reducedMotion)}
             className="mb-3 leading-none"
             style={{
               fontFamily: "Rajdhani, sans-serif",
@@ -294,9 +262,10 @@ function HeroSection() {
             }}
           >
             {PROFILE.name.toUpperCase()}
-          </h1>
+          </motion.h1>
 
-          <h2
+          <motion.h2
+            {...fadeUp(INTRO.tagline, reducedMotion)}
             className="mb-6"
             style={{
               fontFamily: "Rajdhani, sans-serif",
@@ -310,16 +279,17 @@ function HeroSection() {
             }}
           >
             {PROFILE.tagline}
-          </h2>
+          </motion.h2>
 
-          <p
+          <motion.p
+            {...fadeUp(INTRO.intro, reducedMotion)}
             className="mb-9 max-w-md leading-relaxed"
-            style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", fontSize: "1.05rem" }}
+            style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif", fontSize: "1.05rem" }}
           >
             {PROFILE.intro}
-          </p>
+          </motion.p>
 
-          <div className="flex items-center gap-4 flex-wrap">
+          <motion.div {...ctaPop(INTRO.ctas, reducedMotion)} className="flex items-center gap-4 flex-wrap">
             <button
               onClick={() => document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" })}
               className="px-7 py-3.5 rounded-full text-sm font-semibold tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
@@ -345,12 +315,18 @@ function HeroSection() {
             >
               GET IN TOUCH →
             </button>
-          </div>
+          </motion.div>
 
+          {/* Chevron: fades in last, then bobs forever (bob skipped under
+              reduced motion via MotionConfig). */}
           <motion.div
             className="mt-14 flex items-center gap-2"
-            animate={{ y: [0, 7, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: [0, 7, 0] }}
+            transition={{
+              opacity: { delay: INTRO.chevron, duration: 0.5 },
+              y: { delay: INTRO.chevron, duration: 2.2, repeat: Infinity, ease: "easeInOut" },
+            }}
             style={{ color: "#334155" }}
           >
             <ChevronDown size={15} />
@@ -358,19 +334,29 @@ function HeroSection() {
               SCROLL TO EXPLORE
             </span>
           </motion.div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="flex justify-center"
-          initial={{ opacity: 0, scale: 0.78 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <HeroSaturn mx={mouse.x} my={mouse.y} />
+        {/* Saturn scales up from the void — the wrapper animates immediately,
+            even while the GLB is still streaming in. */}
+        <motion.div className="flex justify-center" {...saturnEntrance(reducedMotion)}>
+          <HeroSaturn mx={mx} my={my} satY={satY} satScale={satScale} satOpacity={satOpacity} scrollRef={scrollRef} />
         </motion.div>
       </div>
     </section>
   );
+}
+
+// ─── Section depth parallax ───────────────────────────────────────────────────
+// The section's inner content drifts slightly against the scroll so sections
+// feel like they sit at different depths. Applied to the INNER container only —
+// transforming the useScroll target itself would skew its measurements.
+// NOTE: MotionConfig does not gate scroll-linked style bindings, so reduced
+// motion is handled here explicitly (range collapses to 0).
+function useParallax(ref: React.RefObject<HTMLElement>, range = 40) {
+  const { reducedMotion, tier } = useMotionPrefs();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const r = reducedMotion ? 0 : tier === "lite" ? range / 2 : range;
+  return useTransform(scrollYProgress, [0, 1], [r, -r]);
 }
 
 // ─── Section heading helper ───────────────────────────────────────────────────
@@ -388,9 +374,12 @@ function SectionLabel({ color, text, center }: { color: string; text: string; ce
 // ─── About Section ────────────────────────────────────────────────────────────
 
 function AboutSection() {
+  const ref = useRef<HTMLElement>(null);
+  const y = useParallax(ref, 30);
+
   return (
-    <section id="about" className="py-24 relative" style={{ zIndex: 1 }}>
-      <div className="max-w-4xl mx-auto px-6 md:px-10">
+    <section ref={ref} id="about" className="py-24 relative" style={{ zIndex: 1 }}>
+      <motion.div className="max-w-4xl mx-auto px-6 md:px-10" style={{ y }}>
         <SectionLabel color="#22d3ee" text="MISSION LOG / ABOUT" />
         <h2
           className="mb-8"
@@ -408,17 +397,17 @@ function AboutSection() {
           {ABOUT.map((para, i) => (
             <motion.p
               key={i}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ delay: i * 0.1, duration: 0.6 }}
-              style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", fontSize: "1.1rem", lineHeight: 1.75 }}
+              style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif", fontSize: "1.1rem", lineHeight: 1.75 }}
             >
               {para}
             </motion.p>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -438,11 +427,13 @@ const projBtnFont = { fontFamily: "JetBrains Mono, monospace" as const };
 
 function ProjectsSection() {
   const [hovered, setHovered] = useState<number | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const parallaxY = useParallax(sectionRef, 50);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
-    <section id="projects" className="py-24 relative" style={{ zIndex: 1 }}>
-      <div className="max-w-7xl mx-auto px-6 md:px-10">
+    <section ref={sectionRef} id="projects" className="py-24 relative" style={{ zIndex: 1 }}>
+      <motion.div className="max-w-7xl mx-auto px-6 md:px-10" style={{ y: parallaxY }}>
         <div className="mb-12">
           <SectionLabel color="#8b5cf6" text="MISSIONS / SELECTED WORK" />
           <h2
@@ -466,19 +457,25 @@ function ProjectsSection() {
             return (
               <motion.div
                 key={m.name}
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
+                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ delay: i * 0.08, duration: 0.6 }}
+                className="h-full"
+              >
+              {/* TiltCard owns the hover transform (3D tilt + lift + glare). */}
+              <TiltCard
+                className="h-full"
+                onClick={() => setOpenIdx(i)}
                 onHoverStart={() => setHovered(i)}
                 onHoverEnd={() => setHovered(null)}
-                onClick={() => setOpenIdx(i)}
+              >
+              <div
                 className="relative overflow-hidden rounded-2xl cursor-pointer h-full flex flex-col"
                 style={{
                   background: `linear-gradient(140deg, ${m.from} 0%, ${m.via} 100%)`,
                   border: "1px solid rgba(255,255,255,0.07)",
-                  transform: hovered === i ? "scale(1.025) translateY(-5px)" : "scale(1) translateY(0)",
-                  transition: "transform 0.32s ease, box-shadow 0.32s ease",
+                  transition: "box-shadow 0.32s ease",
                   boxShadow: hovered === i ? `0 24px 64px ${m.accent}28` : "0 4px 24px rgba(0,0,0,0.4)",
                 }}
               >
@@ -515,7 +512,7 @@ function ProjectsSection() {
                     </span>
                   </div>
 
-                  <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}>
+                  <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Space Grotesk, sans-serif" }}>
                     {m.desc}
                   </p>
 
@@ -576,11 +573,13 @@ function ProjectsSection() {
                     )}
                   </div>
                 </div>
+              </div>
+              </TiltCard>
               </motion.div>
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       <ProjectModal project={openIdx !== null ? PROJECTS[openIdx] : null} onClose={() => setOpenIdx(null)} />
     </section>
@@ -666,7 +665,7 @@ function ProjectModal({ project, onClose }: { project: Project | null; onClose: 
                 </div>
               )}
 
-              <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Space Grotesk, sans-serif" }}>
                 {project.details ?? project.desc}
               </p>
 
@@ -813,6 +812,13 @@ function TimelinePlanet({ color, glow, variant, open }: { color: string; glow: s
 
   return (
     <span style={{ position: "relative", width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {/* Orbit ring: dashed circle + glowing dot, brighter/faster when open */}
+      <span
+        className={`tl-orbit${open ? " tl-orbit--open" : ""}`}
+        style={{ borderColor: `${color}44` }}
+      >
+        <span className="tl-orbit-dot" style={{ background: color, boxShadow: `0 0 6px ${glow}` }} />
+      </span>
       {v.ring && <span style={ring(color, v.ringTilt, 62, v.thin ? 14 : 18)} />}
       {v.ring && v.double && <span style={ring(color, v.ringTilt, 50, v.thin ? 10 : 13)} />}
 
@@ -829,8 +835,9 @@ function TimelinePlanet({ color, glow, variant, open }: { color: string; glow: s
           boxShadow: `0 0 ${open ? 16 : 9}px ${glow}${open ? "aa" : "66"}`,
         }}
       >
-        {/* Spinning surface */}
+        {/* Spinning surface (tl-surface lets CSS stop it under reduced motion) */}
         <span
+          className="tl-surface"
           style={{
             position: "absolute",
             top: 0,
@@ -864,14 +871,16 @@ function TimelinePlanet({ color, glow, variant, open }: { color: string; glow: s
 function ExperienceSection() {
   // First (most recent) job open by default; click a star to toggle.
   const [open, setOpen] = useState<number | null>(0);
+  const sectionRef = useRef<HTMLElement>(null);
+  const parallaxY = useParallax(sectionRef, 35);
 
   return (
-    <section id="experience" className="py-24 relative" style={{ zIndex: 1 }}>
+    <section ref={sectionRef} id="experience" className="py-24 relative" style={{ zIndex: 1 }}>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: "radial-gradient(ellipse at 70% 40%, rgba(139,92,246,0.04) 0%, transparent 60%)" }}
       />
-      <div className="max-w-4xl mx-auto px-6 md:px-10">
+      <motion.div className="max-w-4xl mx-auto px-6 md:px-10" style={{ y: parallaxY }}>
         <div className="mb-14">
           <SectionLabel color="#8b5cf6" text="FLIGHT PATH / CAREER" />
           <h2 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "clamp(2rem, 5vw, 3.4rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
@@ -905,7 +914,7 @@ function ExperienceSection() {
                     onClick={toggle}
                     aria-expanded={isOpen}
                     aria-label={`${job.role} at ${job.company}`}
-                    className="flex-shrink-0 flex items-start"
+                    className="tl-node flex-shrink-0 flex items-start"
                     style={{ width: 64, cursor: "pointer" }}
                   >
                     <motion.span
@@ -944,7 +953,7 @@ function ExperienceSection() {
                       <h3 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.55rem", fontWeight: 700, color: "white", letterSpacing: "0.01em", lineHeight: 1.1 }}>
                         {job.role}
                       </h3>
-                      <div className="text-sm" style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif" }}>
+                      <div className="text-sm" style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif" }}>
                         {job.company}
                       </div>
                     </button>
@@ -962,12 +971,12 @@ function ExperienceSection() {
                             className="mt-4 p-5 rounded-2xl"
                             style={{ background: "rgba(15,23,42,0.7)", border: `1px solid ${c.glow}33`, backdropFilter: "blur(12px)" }}
                           >
-                            <p className="text-sm mb-4 leading-relaxed" style={{ color: "#cbd5e1", fontFamily: "Inter, sans-serif" }}>
+                            <p className="text-sm mb-4 leading-relaxed" style={{ color: "#cbd5e1", fontFamily: "Space Grotesk, sans-serif" }}>
                               {job.summary}
                             </p>
                             <ul className="space-y-2">
                               {job.highlights.map((h, j) => (
-                                <li key={j} className="flex gap-2.5 text-sm" style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif" }}>
+                                <li key={j} className="flex gap-2.5 text-sm" style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif" }}>
                                   <span style={{ color: c.color, marginTop: 1 }}>▹</span>
                                   <span>{h}</span>
                                 </li>
@@ -983,7 +992,7 @@ function ExperienceSection() {
             })}
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -993,6 +1002,7 @@ function ExperienceSection() {
 function ContactSection() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const parallaxY = useParallax(ref, 25);
 
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.25 });
@@ -1013,7 +1023,7 @@ function ContactSection() {
         className="absolute inset-0 pointer-events-none"
         style={{ background: "radial-gradient(ellipse at center, rgba(139,92,246,0.055) 0%, transparent 65%)" }}
       />
-      <div className="max-w-7xl mx-auto px-6 md:px-10">
+      <motion.div className="max-w-7xl mx-auto px-6 md:px-10" style={{ y: parallaxY }}>
         <div className="mb-14 text-center">
           <SectionLabel color="#8b5cf6" text="BY THE NUMBERS" center />
           <h2 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "clamp(2rem, 5vw, 3.4rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
@@ -1047,7 +1057,7 @@ function ContactSection() {
               <div className="text-sm font-semibold mb-1.5 relative" style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Rajdhani, sans-serif", letterSpacing: "0.08em" }}>
                 {s.unit}
               </div>
-              <div className="text-xs relative" style={{ color: "#475569", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>
+              <div className="text-xs relative" style={{ color: "#475569", fontFamily: "Space Grotesk, sans-serif", lineHeight: 1.4 }}>
                 {s.label}
               </div>
             </motion.div>
@@ -1074,7 +1084,7 @@ function ContactSection() {
           >
             GET IN TOUCH
           </h3>
-          <p className="mb-8 mx-auto max-w-md relative" style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", lineHeight: 1.65 }}>
+          <p className="mb-8 mx-auto max-w-md relative" style={{ color: "#94a3b8", fontFamily: "Space Grotesk, sans-serif", lineHeight: 1.65 }}>
             {PROFILE.status === "AVAILABLE FOR HIRE"
               ? `I'm currently open to new opportunities. Reach out, or ask my AI assistant (the rocket below) anything about me first.`
               : `Want to collaborate or just say hi? Reach out, or ask my AI assistant (the rocket below) anything about me first.`}
@@ -1103,7 +1113,7 @@ function ContactSection() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -1111,6 +1121,10 @@ function ContactSection() {
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 function Footer() {
+  // The ONLINE pulse is an opacity loop — MotionConfig only gates transform
+  // animations, so reduced motion is handled explicitly here.
+  const { reducedMotion } = useMotionPrefs();
+
   return (
     <footer className="py-10 pb-24 relative" style={{ zIndex: 1, borderTop: "1px solid rgba(148,163,184,0.05)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -1132,7 +1146,7 @@ function Footer() {
           <motion.div
             className="w-2 h-2 rounded-full"
             style={{ background: "#22d3ee", boxShadow: "0 0 7px rgba(34,211,238,0.9)" }}
-            animate={{ opacity: [1, 0.4, 1] }}
+            animate={reducedMotion ? undefined : { opacity: [1, 0.4, 1] }}
             transition={{ duration: 1.6, repeat: Infinity }}
           />
           <span className="text-xs" style={{ color: "#22d3ee", fontFamily: "JetBrains Mono, monospace" }}>
@@ -1162,33 +1176,12 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "#020817", color: "#e2e8f0", fontFamily: "Inter, sans-serif" }}>
+    // reducedMotion="user" makes motion respect the OS prefers-reduced-motion
+    // setting automatically (transform animations skipped, opacity kept).
+    <MotionConfig reducedMotion="user">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "#020817", color: "#e2e8f0", fontFamily: "Space Grotesk, sans-serif" }}>
+      {/* Stars + nebula clouds are all painted by the StarField canvas. */}
       <StarField />
-
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div
-          style={{
-            position: "absolute",
-            width: "55vw",
-            height: "55vh",
-            top: "15%",
-            right: "-15%",
-            background: "radial-gradient(ellipse, rgba(139,92,246,0.045) 0%, transparent 70%)",
-            filter: "blur(50px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: "45vw",
-            height: "45vh",
-            bottom: "8%",
-            left: "-8%",
-            background: "radial-gradient(ellipse, rgba(34,211,238,0.035) 0%, transparent 70%)",
-            filter: "blur(50px)",
-          }}
-        />
-      </div>
 
       <Nav active={active} />
 
@@ -1205,5 +1198,6 @@ export default function App() {
       {/* The rocket-ship Arian AI chatbot, fixed at the bottom */}
       <ArianAI />
     </div>
+    </MotionConfig>
   );
 }

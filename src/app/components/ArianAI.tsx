@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Rocket, X, Send, Sparkles } from "lucide-react";
 import { PROFILE } from "../content";
+import { usePrefersReducedMotion } from "../effects/useMotionPrefs";
+import { INTRO } from "../effects/heroIntro";
 
 // Netlify function (see netlify/functions/chat.ts). config.path maps it to /api/chat.
 const ENDPOINT = "/api/chat";
@@ -28,6 +30,13 @@ export default function ArianAI() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
+
+  // On page load the launcher flies in as the hero intro's finale. Once the
+  // chat has been opened, the launcher re-mounts every time the chat closes
+  // (AnimatePresence) and must come back instantly — not replay the intro.
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const flyIn = !hasInteracted && !reduced;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -82,10 +91,14 @@ export default function ArianAI() {
         <AnimatePresence>
           {!open && (
             <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={reduced ? false : flyIn ? { opacity: 0, y: 110, scale: 0.7 } : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20 }}
-              onClick={() => setOpen(true)}
+              transition={flyIn ? { delay: INTRO.rocket, type: "spring", stiffness: 90, damping: 14 } : undefined}
+              onClick={() => {
+                setOpen(true);
+                setHasInteracted(true);
+              }}
               className="group relative flex items-center gap-2.5 rounded-full pl-3 pr-5 py-2.5"
               style={{
                 background: "rgba(2,8,23,0.82)",
@@ -190,7 +203,7 @@ export default function ArianAI() {
                   <div
                     className="max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Space Grotesk, sans-serif",
                       background:
                         m.role === "user"
                           ? "linear-gradient(135deg, #22d3ee, #0ea5e9)"
@@ -262,7 +275,7 @@ export default function ArianAI() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={`Ask about ${PROFILE.name}…`}
                 className="flex-1 bg-transparent text-sm text-white outline-none px-2"
-                style={{ fontFamily: "Inter, sans-serif" }}
+                style={{ fontFamily: "Space Grotesk, sans-serif" }}
               />
               <button
                 type="submit"

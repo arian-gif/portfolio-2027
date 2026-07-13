@@ -12,7 +12,7 @@
 
 export const PROFILE = {
   // Your name + a short tagline shown in the hero.
-  name: "Arian",
+  name: "Arian Khan",
   tagline: "Mechatronics Engineer | ML & Robotics", // TODO: your real title
   // One or two punchy sentences. This is the big intro under your name.
   intro:
@@ -112,7 +112,7 @@ export const PROJECTS: Project[] = [
   {
     name: "NEURAL NETWORK FROM SCRATCH",
     type: "AI / ML",
-    year: "2024",
+    year: "2025",
     status: "SHIPPED",
     desc: "A neural network built entirely in NumPy, with manual backpropagation, gradient descent, " +
       "and cross-entropy loss, plus hand-derived Gradient Boosting, Decision Trees, and " +
