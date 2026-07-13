@@ -39,10 +39,11 @@ function SaturnModel({ scrollRef, reduced }: SaturnProps & { reduced: boolean })
     if (reduced) return; // static planet under prefers-reduced-motion
     const p = scrollRef?.current ?? 0;
     if (spinner.current) spinner.current.rotation.y += delta * (0.3 + p * 1.2);
-    if (tilt.current) {
-      tilt.current.rotation.x = 0.35 + p * 0.5;
-      tilt.current.position.z = -p * 2.5;
-    }
+    // Only rotate in place (spin faster + tip the rings) so the planet stays
+    // centered inside its DOM glow halo. The "recede" on scroll is done by the
+    // wrapper's scale/translate (see HeroSaturn) which moves glow + canvas as
+    // one — pushing the planet back in 3D Z here would slide it out of the halo.
+    if (tilt.current) tilt.current.rotation.x = 0.35 + p * 0.5;
   });
 
   return (
