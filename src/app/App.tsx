@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, Suspense, lazy, type CSSProperties } from "react";
-import { motion, AnimatePresence, MotionConfig } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  MotionConfig,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValue,
+  useMotionValueEvent,
+  type MotionValue,
+} from "motion/react";
 import {
   ChevronDown,
   Rocket,
@@ -27,47 +37,64 @@ import {
 import ArianAI from "./components/ArianAI";
 import StarField from "./effects/StarField";
 import TiltCard from "./effects/TiltCard";
+import { useMotionPrefs } from "./effects/useMotionPrefs";
 
 // 3D Saturn is loaded lazily so the page paints instantly while three.js loads.
 const Saturn3D = lazy(() => import("./components/Saturn3D"));
 
 // ─── Hero Saturn (3D GLB) ─────────────────────────────────────────────────────
 
-function HeroSaturn({ mx, my }: { mx: number; my: number }) {
+type HeroSaturnProps = {
+  // Spring-smoothed mouse position (-0.5..0.5) — MotionValues, no re-renders.
+  mx: MotionValue<number>;
+  my: MotionValue<number>;
+  // Scroll-driven transforms from the hero's scroll progress.
+  satY: MotionValue<number>;
+  satScale: MotionValue<number>;
+  satOpacity: MotionValue<number>;
+  // Raw 0..1 hero scroll progress for the GL scene (read inside useFrame).
+  scrollRef: React.MutableRefObject<number>;
+};
+
+function HeroSaturn({ mx, my, satY, satScale, satOpacity, scrollRef }: HeroSaturnProps) {
   const SIZE = 380;
+  // Nested motion.divs keep the two transform sources independent:
+  // outer = scroll (recede/shrink/fade), inner = mouse drift.
+  const driftX = useTransform(mx, (v) => v * 14);
+  const driftY = useTransform(my, (v) => v * 10);
 
   return (
-    <motion.div
-      style={{ width: SIZE, height: SIZE, maxWidth: "90vw", position: "relative", flexShrink: 0 }}
-      animate={{ x: mx * 14, y: my * 10 }}
-      transition={{ type: "spring", stiffness: 35, damping: 22 }}
-    >
-      {/* Nebula glow behind the planet */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "-30%",
-          background:
-            "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
-          filter: "blur(28px)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: "8%",
-          borderRadius: "50%",
-          boxShadow:
-            "0 0 70px rgba(34,211,238,0.18), 0 0 140px rgba(139,92,246,0.12)",
-          pointerEvents: "none",
-        }}
-      />
+    <motion.div style={{ y: satY, scale: satScale, opacity: satOpacity, flexShrink: 0 }}>
+      <motion.div
+        style={{ width: SIZE, height: SIZE, maxWidth: "90vw", position: "relative", x: driftX, y: driftY }}
+      >
+        {/* Nebula glow behind the planet */}
+        <div
+          style={{
+            position: "absolute",
+            inset: "-30%",
+            background:
+              "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
+            filter: "blur(28px)",
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: "8%",
+            borderRadius: "50%",
+            boxShadow:
+              "0 0 70px rgba(34,211,238,0.18), 0 0 140px rgba(139,92,246,0.12)",
+            pointerEvents: "none",
+          }}
+        />
 
-      {/* The actual 3D model */}
-      <Suspense fallback={null}>
-        <Saturn3D />
-      </Suspense>
+        {/* The actual 3D model */}
+        <Suspense fallback={null}>
+          <Saturn3D scrollRef={scrollRef} />
+        </Suspense>
+      </motion.div>
     </motion.div>
   );
 }
@@ -177,18 +204,41 @@ function Nav({ active }: { active: string }) {
 // ─── Hero Section ─────────────────────────────────────────────────────────────
 
 function HeroSection() {
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const heroRef = useRef<HTMLElement>(null);
+
+  // Scroll progress through the hero (0 = top of page, 1 = hero scrolled out).
+  // Drives Saturn's "leaving orbit" exit: sink, shrink, fade + faster spin.
+  // Scroll-linked bindings bypass MotionConfig, so reduced motion flattens
+  // the ranges here explicitly.
+  const { reducedMotion } = useMotionPrefs();
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const satY = useTransform(scrollYProgress, [0, 1], reducedMotion ? [0, 0] : [0, 140]);
+  const satScale = useTransform(scrollYProgress, [0, 1], reducedMotion ? [1, 1] : [1, 0.55]);
+  const satOpacity = useTransform(scrollYProgress, [0, 0.85], reducedMotion ? [1, 1] : [1, 0]);
+
+  // The GL scene can't consume MotionValues — mirror progress into a ref.
+  const scrollRef = useRef(0);
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    scrollRef.current = v;
+  });
+
+  // Mouse drift as spring-smoothed MotionValues (no re-render per mousemove).
+  const mxRaw = useMotionValue(0);
+  const myRaw = useMotionValue(0);
+  const mx = useSpring(mxRaw, { stiffness: 35, damping: 22 });
+  const my = useSpring(myRaw, { stiffness: 35, damping: 22 });
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      setMouse({ x: e.clientX / innerWidth - 0.5, y: e.clientY / innerHeight - 0.5 });
+      mxRaw.set(e.clientX / innerWidth - 0.5);
+      myRaw.set(e.clientY / innerHeight - 0.5);
     };
     addEventListener("mousemove", h);
     return () => removeEventListener("mousemove", h);
-  }, []);
+  }, [mxRaw, myRaw]);
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
+    <section ref={heroRef} id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
       <div className="w-full max-w-7xl mx-auto px-6 md:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center py-16">
         <motion.div
           initial={{ opacity: 0, x: -32 }}
@@ -285,11 +335,24 @@ function HeroSection() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
-          <HeroSaturn mx={mouse.x} my={mouse.y} />
+          <HeroSaturn mx={mx} my={my} satY={satY} satScale={satScale} satOpacity={satOpacity} scrollRef={scrollRef} />
         </motion.div>
       </div>
     </section>
   );
+}
+
+// ─── Section depth parallax ───────────────────────────────────────────────────
+// The section's inner content drifts slightly against the scroll so sections
+// feel like they sit at different depths. Applied to the INNER container only —
+// transforming the useScroll target itself would skew its measurements.
+// NOTE: MotionConfig does not gate scroll-linked style bindings, so reduced
+// motion is handled here explicitly (range collapses to 0).
+function useParallax(ref: React.RefObject<HTMLElement>, range = 40) {
+  const { reducedMotion, tier } = useMotionPrefs();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const r = reducedMotion ? 0 : tier === "lite" ? range / 2 : range;
+  return useTransform(scrollYProgress, [0, 1], [r, -r]);
 }
 
 // ─── Section heading helper ───────────────────────────────────────────────────
@@ -307,9 +370,12 @@ function SectionLabel({ color, text, center }: { color: string; text: string; ce
 // ─── About Section ────────────────────────────────────────────────────────────
 
 function AboutSection() {
+  const ref = useRef<HTMLElement>(null);
+  const y = useParallax(ref, 30);
+
   return (
-    <section id="about" className="py-24 relative" style={{ zIndex: 1 }}>
-      <div className="max-w-4xl mx-auto px-6 md:px-10">
+    <section ref={ref} id="about" className="py-24 relative" style={{ zIndex: 1 }}>
+      <motion.div className="max-w-4xl mx-auto px-6 md:px-10" style={{ y }}>
         <SectionLabel color="#22d3ee" text="MISSION LOG / ABOUT" />
         <h2
           className="mb-8"
@@ -327,8 +393,8 @@ function AboutSection() {
           {ABOUT.map((para, i) => (
             <motion.p
               key={i}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ delay: i * 0.1, duration: 0.6 }}
               style={{ color: "#94a3b8", fontFamily: "Inter, sans-serif", fontSize: "1.1rem", lineHeight: 1.75 }}
@@ -337,7 +403,7 @@ function AboutSection() {
             </motion.p>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -357,11 +423,13 @@ const projBtnFont = { fontFamily: "JetBrains Mono, monospace" as const };
 
 function ProjectsSection() {
   const [hovered, setHovered] = useState<number | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const parallaxY = useParallax(sectionRef, 50);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
-    <section id="projects" className="py-24 relative" style={{ zIndex: 1 }}>
-      <div className="max-w-7xl mx-auto px-6 md:px-10">
+    <section ref={sectionRef} id="projects" className="py-24 relative" style={{ zIndex: 1 }}>
+      <motion.div className="max-w-7xl mx-auto px-6 md:px-10" style={{ y: parallaxY }}>
         <div className="mb-12">
           <SectionLabel color="#8b5cf6" text="MISSIONS / SELECTED WORK" />
           <h2
@@ -385,8 +453,8 @@ function ProjectsSection() {
             return (
               <motion.div
                 key={m.name}
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
+                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="h-full"
@@ -507,7 +575,7 @@ function ProjectsSection() {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       <ProjectModal project={openIdx !== null ? PROJECTS[openIdx] : null} onClose={() => setOpenIdx(null)} />
     </section>
@@ -799,14 +867,16 @@ function TimelinePlanet({ color, glow, variant, open }: { color: string; glow: s
 function ExperienceSection() {
   // First (most recent) job open by default; click a star to toggle.
   const [open, setOpen] = useState<number | null>(0);
+  const sectionRef = useRef<HTMLElement>(null);
+  const parallaxY = useParallax(sectionRef, 35);
 
   return (
-    <section id="experience" className="py-24 relative" style={{ zIndex: 1 }}>
+    <section ref={sectionRef} id="experience" className="py-24 relative" style={{ zIndex: 1 }}>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: "radial-gradient(ellipse at 70% 40%, rgba(139,92,246,0.04) 0%, transparent 60%)" }}
       />
-      <div className="max-w-4xl mx-auto px-6 md:px-10">
+      <motion.div className="max-w-4xl mx-auto px-6 md:px-10" style={{ y: parallaxY }}>
         <div className="mb-14">
           <SectionLabel color="#8b5cf6" text="FLIGHT PATH / CAREER" />
           <h2 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "clamp(2rem, 5vw, 3.4rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
@@ -918,7 +988,7 @@ function ExperienceSection() {
             })}
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -928,6 +998,7 @@ function ExperienceSection() {
 function ContactSection() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const parallaxY = useParallax(ref, 25);
 
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.25 });
@@ -948,7 +1019,7 @@ function ContactSection() {
         className="absolute inset-0 pointer-events-none"
         style={{ background: "radial-gradient(ellipse at center, rgba(139,92,246,0.055) 0%, transparent 65%)" }}
       />
-      <div className="max-w-7xl mx-auto px-6 md:px-10">
+      <motion.div className="max-w-7xl mx-auto px-6 md:px-10" style={{ y: parallaxY }}>
         <div className="mb-14 text-center">
           <SectionLabel color="#8b5cf6" text="BY THE NUMBERS" center />
           <h2 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "clamp(2rem, 5vw, 3.4rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
@@ -1038,7 +1109,7 @@ function ContactSection() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }
