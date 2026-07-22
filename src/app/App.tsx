@@ -5,10 +5,6 @@ import {
   MotionConfig,
   useScroll,
   useTransform,
-  useSpring,
-  useMotionValue,
-  useMotionValueEvent,
-  type MotionValue,
 } from "motion/react";
 import {
   ChevronDown,
@@ -38,65 +34,46 @@ import ArianAI from "./components/ArianAI";
 import StarField from "./effects/StarField";
 import TiltCard from "./effects/TiltCard";
 import { useMotionPrefs } from "./effects/useMotionPrefs";
-import { INTRO, fadeUp, titleWipe, ctaPop, saturnEntrance } from "./effects/heroIntro";
+import { INTRO, fadeUp, titleWipe, ctaPop } from "./effects/heroIntro";
 
 // 3D Saturn is loaded lazily so the page paints instantly while three.js loads.
 const Saturn3D = lazy(() => import("./components/Saturn3D"));
 
 // ─── Hero Saturn (3D GLB) ─────────────────────────────────────────────────────
+// Fixed in place and large. The planet keeps its own gentle spin (inside the
+// GLB scene); the wrapper itself never moves, scales, or fades on scroll/mouse.
 
-type HeroSaturnProps = {
-  // Spring-smoothed mouse position (-0.5..0.5) — MotionValues, no re-renders.
-  mx: MotionValue<number>;
-  my: MotionValue<number>;
-  // Scroll-driven transforms from the hero's scroll progress.
-  satY: MotionValue<number>;
-  satScale: MotionValue<number>;
-  satOpacity: MotionValue<number>;
-  // Raw 0..1 hero scroll progress for the GL scene (read inside useFrame).
-  scrollRef: React.MutableRefObject<number>;
-};
-
-function HeroSaturn({ mx, my, satY, satScale, satOpacity, scrollRef }: HeroSaturnProps) {
-  const SIZE = 380;
-  // Nested motion.divs keep the two transform sources independent:
-  // outer = scroll (recede/shrink/fade), inner = mouse drift.
-  const driftX = useTransform(mx, (v) => v * 14);
-  const driftY = useTransform(my, (v) => v * 10);
+function HeroSaturn() {
+  const SIZE = 500;
 
   return (
-    <motion.div style={{ y: satY, scale: satScale, opacity: satOpacity, flexShrink: 0 }}>
-      <motion.div
-        style={{ width: SIZE, height: SIZE, maxWidth: "90vw", position: "relative", x: driftX, y: driftY }}
-      >
-        {/* Nebula glow behind the planet */}
-        <div
-          style={{
-            position: "absolute",
-            inset: "-30%",
-            background:
-              "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
-            filter: "blur(28px)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: "8%",
-            borderRadius: "50%",
-            boxShadow:
-              "0 0 70px rgba(34,211,238,0.18), 0 0 140px rgba(139,92,246,0.12)",
-            pointerEvents: "none",
-          }}
-        />
+    <div style={{ width: SIZE, height: SIZE, maxWidth: "92vw", position: "relative", flexShrink: 0 }}>
+      {/* Nebula glow behind the planet */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "-30%",
+          background:
+            "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
+          filter: "blur(28px)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: "8%",
+          borderRadius: "50%",
+          boxShadow: "0 0 70px rgba(34,211,238,0.18), 0 0 140px rgba(139,92,246,0.12)",
+          pointerEvents: "none",
+        }}
+      />
 
-        {/* The actual 3D model */}
-        <Suspense fallback={null}>
-          <Saturn3D scrollRef={scrollRef} />
-        </Suspense>
-      </motion.div>
-    </motion.div>
+      {/* The actual 3D model */}
+      <Suspense fallback={null}>
+        <Saturn3D />
+      </Suspense>
+    </div>
   );
 }
 
@@ -104,6 +81,23 @@ function HeroSaturn({ mx, my, satY, satScale, satOpacity, scrollRef }: HeroSatur
 
 function Nav({ active }: { active: string }) {
   const [open, setOpen] = useState(false);
+  const { reducedMotion } = useMotionPrefs();
+
+  // Auto-hide: slide the header away when scrolling down (reading), reveal it
+  // when scrolling up (navigating). Always shown near the top of the page.
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 80) setHidden(false);
+      else if (y > last + 4) setHidden(true);
+      else if (y < last - 4) setHidden(false);
+      last = y;
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => removeEventListener("scroll", onScroll);
+  }, []);
 
   const scroll = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -111,7 +105,11 @@ function Nav({ active }: { active: string }) {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40">
+    <motion.nav
+      className="fixed top-0 left-0 right-0 z-40"
+      animate={{ y: hidden && !open ? "-100%" : "0%" }}
+      transition={{ duration: reducedMotion ? 0 : 0.3, ease: "easeInOut" }}
+    >
       <div
         className="flex items-center justify-between px-6 md:px-10 py-4"
         style={{
@@ -198,48 +196,17 @@ function Nav({ active }: { active: string }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 }
 
 // ─── Hero Section ─────────────────────────────────────────────────────────────
 
 function HeroSection() {
-  const heroRef = useRef<HTMLElement>(null);
-
-  // Scroll progress through the hero (0 = top of page, 1 = hero scrolled out).
-  // Drives Saturn's "leaving orbit" exit: sink, shrink, fade + faster spin.
-  // Scroll-linked bindings bypass MotionConfig, so reduced motion flattens
-  // the ranges here explicitly.
   const { reducedMotion } = useMotionPrefs();
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const satY = useTransform(scrollYProgress, [0, 1], reducedMotion ? [0, 0] : [0, 140]);
-  const satScale = useTransform(scrollYProgress, [0, 1], reducedMotion ? [1, 1] : [1, 0.55]);
-  const satOpacity = useTransform(scrollYProgress, [0, 0.85], reducedMotion ? [1, 1] : [1, 0]);
-
-  // The GL scene can't consume MotionValues — mirror progress into a ref.
-  const scrollRef = useRef(0);
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    scrollRef.current = v;
-  });
-
-  // Mouse drift as spring-smoothed MotionValues (no re-render per mousemove).
-  const mxRaw = useMotionValue(0);
-  const myRaw = useMotionValue(0);
-  const mx = useSpring(mxRaw, { stiffness: 35, damping: 22 });
-  const my = useSpring(myRaw, { stiffness: 35, damping: 22 });
-
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      mxRaw.set(e.clientX / innerWidth - 0.5);
-      myRaw.set(e.clientY / innerHeight - 0.5);
-    };
-    addEventListener("mousemove", h);
-    return () => removeEventListener("mousemove", h);
-  }, [mxRaw, myRaw]);
 
   return (
-    <section ref={heroRef} id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
+    <section id="home" className="relative min-h-screen flex items-center pt-20" style={{ zIndex: 1 }}>
       <div className="w-full max-w-7xl mx-auto px-6 md:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center py-16">
         {/* Left column: staggered entrance sequence (see effects/heroIntro.ts) */}
         <div>
@@ -336,10 +303,14 @@ function HeroSection() {
           </motion.div>
         </div>
 
-        {/* Saturn scales up from the void — the wrapper animates immediately,
-            even while the GLB is still streaming in. */}
-        <motion.div className="flex justify-center" {...saturnEntrance(reducedMotion)}>
-          <HeroSaturn mx={mx} my={my} satY={satY} satScale={satScale} satOpacity={satOpacity} scrollRef={scrollRef} />
+        {/* Saturn sits fixed and large — a simple fade-in, no movement. */}
+        <motion.div
+          className="flex justify-center"
+          initial={reducedMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: INTRO.saturn, duration: 0.9, ease: "easeOut" }}
+        >
+          <HeroSaturn />
         </motion.div>
       </div>
     </section>
