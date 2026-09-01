@@ -207,11 +207,10 @@ export const EXPERIENCE: Job[] = [
     period: "Jan 2026 — August 2026",
     location: "Remote",
     summary:
-      "Researching multimodal LLM hallucinations and novel contrastive decoding methods to reduce them.",
+      "Researching multimodal LLM hallucinations and building Visual Grounding Feedback (VGF), a decoding-time method that measurably reduces them.",
     highlights: [
-      "Researched MLLM hallucinations, where models confidently describe objects, attributes, or relations not present in an image, identifying key failure modes in existing contrastive decoding methods (VCD, LayerCD, iTaD).",
-      "Developed ACD-VGF to address these failures, contrasting original and content-distorted image passes then cross-checking predictions against an open-vocabulary detector (OWL-ViT) at each decoding step.",
-      "Evaluated against POPE and AMBER benchmarks across LLaVA-1.5 and InstructBLIP, demonstrating measurable reductions in existence, attribute, and relation hallucination rates over VCD, LayerCD, and iTaD baselines.",
+      "Researched MLLM hallucinations, where models describe objects, attributes, or relations not present in an image, evaluating failure modes in contrastive decoding methods including VCD, LayerCD, and iTaD.",
+      "Developed and evaluated Visual Grounding Feedback (VGF), a decoding-time method using an open-vocabulary detector (OWL-ViT) to verify queried objects, reducing InstructBLIP hallucinations from 36.30% to 9.51% and improving LLaVA-1.5 relation F1 from 44.22% to 76.45% on POPE and AMBER.",
     ],
   },
   {
