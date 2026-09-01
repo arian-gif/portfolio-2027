@@ -27,7 +27,7 @@ export const PROFILE = {
   email: "as8khan@uwaterloo.ca", // TODO
   github: "https://github.com/arian-gif", // TODO
   linkedin: "https://www.linkedin.com/in/ariansadatkhan/", // TODO
-  resumeUrl: "https://www.overleaf.com/read/mcdgbxfdhrbm#ca7d05", // TODO: link to a PDF résumé, or leave "" to hide
+  resumeUrl: "https://www.overleaf.com/read/vtxgcgjfwhrd#798763", // TODO: link to a PDF résumé, or leave "" to hide
 };
 
 // ─── ABOUT ──────────────────────────────────────────────────────────────────
@@ -193,12 +193,12 @@ export const EXPERIENCE: Job[] = [
     period: "May 2026 — August 2026",
     location: "Remote",
     summary:
-      "Building a multi-agent Microsoft Teams chatbot and the concurrent backend that powers it.",
+      "Building a multi-agent Microsoft Teams chatbot, the concurrent backend that powers it, and an image-ingestion pipeline that extends its RAG knowledge base.",
     highlights: [
-      "Developed a multi-agent Microsoft Teams chatbot using LangGraph, designing complex state management and a RAG architecture to dynamically synthesize accurate responses from over 100 Confluence pages.",
-      "Architected a highly concurrent, multi-user backend, applying critical system design optimizations including Redis caching, rate limiting, and horizontal scaling to ensure low latency and reliable asynchronous processing.",
-      "Integrated Langfuse to track agent telemetry and interaction data, using these insights to systematically evaluate and select the most performant LLMs for specific tool-calling tasks.",
-      "Fine-tuned a custom large language model tailored for automated document generation, significantly improving the formatting accuracy and domain relevance of the outputs.",
+      "Developed a multi-agent Microsoft Teams chatbot using LangGraph, designing stateful agent workflows and a RAG architecture to synthesize responses from over 100 Confluence pages.",
+      "Improved multi-user response performance through asynchronous processing, Redis caching, and Azure sidecar warm-up optimizations, reducing average response latency by 95% and minimizing cold-start delays.",
+      "Integrated Langfuse for end-to-end agent tracing and telemetry, analyzing 500+ interactions across latency, token usage, tool calls, and model outputs to evaluate and optimize LLM performance for tool-calling workflows.",
+      "Built a two-stage image ingestion pipeline that generated descriptive text for 150+ images, incorporated human review, and ingested approved content into a vector database, extending the RAG knowledge base with image-derived information.",
     ],
   },
   {

@@ -64,13 +64,17 @@ EXPERIENCE:
   models. Integrated ROS (Robot Operating System) as the communication layer between nodes
   and topics for modular coordination, and built and wired a physical robot arm that picks
   up and moves boxes to designated target locations.
-- Lynx: AI Tools Developer, Remote (May 2026 to Present):
-  Developed a multi-agent Microsoft Teams chatbot using LangGraph with complex state
-  management and a RAG architecture that synthesizes accurate responses from 100+ Confluence
-  pages. Architected a highly concurrent, multi-user backend with Redis caching, rate limiting,
-  and horizontal scaling for low latency and reliable asynchronous processing. Integrated
-  Langfuse for agent telemetry to evaluate and select the most performant LLMs for tool-calling
-  tasks, and fine-tuned a custom LLM for automated document generation.
+- Lynx: AI Tools Developer, Remote (May 2026 to Aug 2026):
+  Developed a multi-agent Microsoft Teams chatbot using LangGraph, designing stateful agent
+  workflows and a RAG architecture to synthesize responses from over 100 Confluence pages.
+  Improved multi-user response performance through asynchronous processing, Redis caching, and
+  Azure sidecar warm-up optimizations, reducing average response latency by 95% and minimizing
+  cold-start delays. Integrated Langfuse for end-to-end agent tracing and telemetry, analyzing
+  500+ interactions across latency, token usage, tool calls, and model outputs to evaluate and
+  optimize LLM performance for tool-calling workflows. Built a two-stage image ingestion pipeline
+  that generated descriptive text for 150+ images, incorporated human review, and ingested
+  approved content into a vector database, extending the RAG knowledge base with image-derived
+  information.
 - Algoverse: ML Researcher, Remote (Jan 2026 to Present):
   Researched multimodal LLM (MLLM) hallucinations and failure modes in contrastive decoding
   methods (VCD, LayerCD, iTaD). Developed ACD-VGF, which contrasts original and content-distorted
