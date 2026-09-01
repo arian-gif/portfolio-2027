@@ -75,12 +75,13 @@ EXPERIENCE:
   that generated descriptive text for 150+ images, incorporated human review, and ingested
   approved content into a vector database, extending the RAG knowledge base with image-derived
   information.
-- Algoverse: ML Researcher, Remote (Jan 2026 to Present):
-  Researched multimodal LLM (MLLM) hallucinations and failure modes in contrastive decoding
-  methods (VCD, LayerCD, iTaD). Developed ACD-VGF, which contrasts original and content-distorted
-  image passes and cross-checks predictions against an open-vocabulary detector (OWL-ViT) at each
-  decoding step. Evaluated on POPE and AMBER benchmarks across LLaVA-1.5 and InstructBLIP, showing
-  measurable reductions in existence, attribute, and relation hallucination rates over baselines.
+- Algoverse: ML Researcher, Remote (Jan 2026 to Aug 2026):
+  Researched multimodal LLM (MLLM) hallucinations, where models describe objects, attributes, or
+  relations not present in an image, evaluating failure modes in contrastive decoding methods
+  including VCD, LayerCD, and iTaD. Developed and evaluated Visual Grounding Feedback (VGF), a
+  decoding-time method using an open-vocabulary detector (OWL-ViT) to verify queried objects,
+  reducing InstructBLIP hallucinations from 36.30% to 9.51% and improving LLaVA-1.5 relation F1
+  from 44.22% to 76.45% on POPE and AMBER.
 - BCS Automation: AI Developer, Belleville, ON (Sept 2025 to Dec 2025):
   Built an LSTM AutoEncoder anomaly detection system in PyTorch that predicted failures 2 to 4 weeks
   early (92% accuracy, 35% less equipment downtime). Designed a cloud-scale Azure KQL pipeline
