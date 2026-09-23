@@ -37,6 +37,21 @@ PROJECTS:
   intersection of AI and the real world. Details are confidential/under wraps; if a visitor is
   interested, invite them to reach out to Arian directly via the Contact section. Do not invent
   specifics about it beyond that it exists and is in stealth.
+- GPT from Scratch + Visualized Internals (2026, in progress): a decoder-only (GPT-style)
+  transformer built from first principles in PyTorch, with no nn.TransformerDecoder shortcut:
+  √dim-scaled token embeddings, sinusoidal positional encoding, causal multi-head self-attention
+  as a single batched matmul across heads, pre-norm residuals, Xavier init. ~4.8M parameters
+  (dim 256, 6 layers, 8 heads, d_ff 1024, 65-char vocab), trained on character-level Shakespeare
+  on a Colab T4: train loss 4.2 to 1.10 and val loss to 1.49 over 5000 steps, with val loss
+  plateauing around step 3500 (an overfitting signal he diagnosed from the train/val curves).
+  He built a training visualizer that hooks into the model, snapshots a probe sentence at ~60
+  points in training, and packs activations, attention weights, top-k predictions, and a PCA of
+  the embedding table into one self-contained scrubbable HTML file. He also served GPT-2 with
+  vLLM (sampling params, per-token logprobs), then re-ran generation through HuggingFace
+  transformers with forward hooks to visualize every attention head, the residual stream, and
+  each block's 3072 feed-forward neurons lighting up as each token is generated.
+  Tech: Python, PyTorch, vLLM, HuggingFace transformers, vanilla JS/Canvas, Google Colab.
+  Repo: https://github.com/arian-gif/AI-System
 - Agentic Full-Stack Orchestrator: an agentic AI system that autonomously turns high-level
   software requirements into complete full-stack applications. A manager agent orchestrates
   specialized frontend, backend, reviewer, and documentation agents, running in parallel with
