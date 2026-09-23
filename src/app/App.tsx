@@ -425,6 +425,9 @@ function ProjectsSection() {
             // When a project has a video but no live demo, its accent button opens
             // the modal (to play the video) — so we don't also show a "Details" button.
             const primaryOpensModal = !!m.video && !m.demo;
+            // With an odd count, the last card would sit alone in the left column —
+            // stretch it across both columns instead.
+            const spanFull = PROJECTS.length % 2 === 1 && i === PROJECTS.length - 1;
             return (
               <motion.div
                 key={m.name}
@@ -432,7 +435,7 @@ function ProjectsSection() {
                 whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ delay: i * 0.08, duration: 0.6 }}
-                className="h-full"
+                className={spanFull ? "h-full md:col-span-2" : "h-full"}
               >
               {/* TiltCard owns the hover transform (3D tilt + lift + glare). */}
               <TiltCard
@@ -463,7 +466,14 @@ function ProjectsSection() {
                   style={{ background: `linear-gradient(90deg, transparent, ${m.accent}80, transparent)` }}
                 />
 
-                <div className="p-6 relative flex flex-col flex-1">
+                {/* A full-width card splits into two panes on desktop: story on the
+                    left, tags + actions on the right, divided by a hairline. */}
+                <div
+                  className={`p-6 relative flex flex-col flex-1 ${
+                    spanFull ? "md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] md:gap-10 md:px-10 md:py-12" : ""
+                  }`}
+                >
+                  <div>
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <div className="text-xs tracking-widest mb-1" style={{ color: m.accent, fontFamily: "JetBrains Mono, monospace" }}>
@@ -483,11 +493,24 @@ function ProjectsSection() {
                     </span>
                   </div>
 
-                  <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Space Grotesk, sans-serif" }}>
+                  <p
+                    className={`text-sm mb-6 leading-relaxed ${spanFull ? "md:mb-0" : ""}`}
+                    style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Space Grotesk, sans-serif" }}
+                  >
                     {m.desc}
                   </p>
+                  </div>
 
-                  <div className="flex flex-wrap gap-2 pt-4 mt-auto" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div
+                    className={`flex flex-col mt-auto ${
+                      spanFull ? "md:mt-0 md:justify-center md:pl-10 md:border-l md:border-white/10" : ""
+                    }`}
+                  >
+                  <div
+                    className={`flex flex-wrap gap-2 pt-4 border-t border-white/[0.07] ${
+                      spanFull ? "md:border-t-0 md:pt-0" : ""
+                    }`}
+                  >
                     {m.tags.map((t) => (
                       <span
                         key={t}
@@ -542,6 +565,7 @@ function ProjectsSection() {
                         <Info size={13} /> DETAILS
                       </button>
                     )}
+                  </div>
                   </div>
                 </div>
               </div>

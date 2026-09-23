@@ -88,6 +88,34 @@ export const PROJECTS: Project[] = [
     accent: "#818CF8",
   },
   {
+    name: "GPT FROM SCRATCH + VISUALIZED INTERNALS",
+    type: "AI / ML",
+    year: "2026",
+    status: "IN PROGRESS",
+    desc: "A decoder-only transformer built from scratch in PyTorch and trained on Shakespeare, " +
+      "with custom interpretability tooling that visualizes attention, activations, and neurons " +
+      "firing during both training and inference, plus GPT-2 served with vLLM.",
+    details:
+      "A GPT-style decoder-only transformer where every component is written from first principles, " +
+      "with no nn.TransformerDecoder shortcut: √dim-scaled token embeddings, sinusoidal positional " +
+      "encoding, causal multi-head self-attention computed as a single batched matmul across heads, " +
+      "pre-norm residual blocks, and Xavier init (~4.8M parameters: 6 layers, 8 heads, dim 256). " +
+      "Trained on character-level Shakespeare on a T4 GPU, train loss fell from 4.2 to 1.10 and val loss " +
+      "to 1.49 over 5,000 steps, with val loss plateauing around step 3,500, a clean overfitting signal " +
+      "visible in the recorded curves. I built a training visualizer that hooks into the model, snapshots " +
+      "a probe sentence at ~60 points in training, and packs activations, attention maps, top-k " +
+      "predictions, and a PCA of the embedding space into one self-contained, scrubbable HTML file. " +
+      "On the inference side, I served GPT-2 with vLLM (sampling params, per-token logprobs), then, since " +
+      "vLLM hides its internals by design, re-ran generation through HuggingFace transformers with forward " +
+      "hooks to record every attention head, the residual stream at each block, and each block's 3,072 " +
+      "feed-forward neurons, rendered as a live heatmap that lights up as each token is generated.",
+    tags: ["PyTorch", "Transformers", "vLLM", "Interpretability", "Python"],
+    repo: "https://github.com/arian-gif/AI-System",
+    from: "#500724",
+    via: "#831843",
+    accent: "#F472B6",
+  },
+  {
     name: "AGENTIC FULL-STACK ORCHESTRATOR",
     type: "AI / ML",
     year: "2025",
