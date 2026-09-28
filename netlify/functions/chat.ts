@@ -50,7 +50,12 @@ PROJECTS:
   vLLM (sampling params, per-token logprobs), then re-ran generation through HuggingFace
   transformers with forward hooks to visualize every attention head, the residual stream, and
   each block's 3072 feed-forward neurons lighting up as each token is generated.
-  Tech: Python, PyTorch, vLLM, HuggingFace transformers, vanilla JS/Canvas, Google Colab.
+  In progress: learning what happens below PyTorch with hand-written CUDA kernels (run on a
+  Colab T4): vector add (kernel launches, thread/block indexing), a softmax kernel with one
+  thread per row, and a block-cooperative softmax using a shared-memory reduction. Planned
+  next: timing softmax on large matrices, naive vs tiled matrix multiply, a custom attention
+  kernel benchmarked against PyTorch's, and profiling GPT-2 with torch.profiler.
+  Tech: Python, PyTorch, CUDA, vLLM, HuggingFace transformers, vanilla JS/Canvas, Google Colab.
   Repo: https://github.com/arian-gif/AI-System
 - Agentic Full-Stack Orchestrator: an agentic AI system that autonomously turns high-level
   software requirements into complete full-stack applications. A manager agent orchestrates

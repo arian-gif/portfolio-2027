@@ -108,8 +108,12 @@ export const PROJECTS: Project[] = [
       "On the inference side, I served GPT-2 with vLLM (sampling params, per-token logprobs), then, since " +
       "vLLM hides its internals by design, re-ran generation through HuggingFace transformers with forward " +
       "hooks to record every attention head, the residual stream at each block, and each block's 3,072 " +
-      "feed-forward neurons, rendered as a live heatmap that lights up as each token is generated.",
-    tags: ["PyTorch", "Transformers", "vLLM", "Interpretability", "Python"],
+      "feed-forward neurons, rendered as a live heatmap that lights up as each token is generated. " +
+      "Now I'm going below PyTorch into CUDA: hand-written kernels for vector add and the softmax " +
+      "from attention, first one thread per row, then a block of threads cooperating on a row " +
+      "through a shared-memory reduction. Next up: naive vs tiled matrix multiply, then a custom " +
+      "attention kernel benchmarked against PyTorch's.",
+    tags: ["PyTorch", "Transformers", "CUDA", "vLLM", "Interpretability", "Python"],
     repo: "https://github.com/arian-gif/AI-System",
     from: "#500724",
     via: "#831843",
