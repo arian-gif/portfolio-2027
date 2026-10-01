@@ -88,7 +88,7 @@ export const PROJECTS: Project[] = [
     accent: "#818CF8",
   },
   {
-    name: "GPT FROM SCRATCH + VISUALIZED INTERNALS",
+    name: "GPT FROM SCRATCH",
     type: "AI / ML",
     year: "2026",
     status: "IN PROGRESS",
